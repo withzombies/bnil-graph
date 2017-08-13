@@ -1,7 +1,7 @@
 {
 	"plugin": {
 		"name": "bnil-graph",
-		"type": [""ui" ],
+		"type": ["ui"],
 		"api": "python2",
 		"description": "A BinaryNinja plugin to graph a BNIL instruction tree",
 		"longdescription": "A BinaryNinja plugin to graph a BNIL instruction tree",
