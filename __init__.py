@@ -53,7 +53,7 @@ def print_il_graphviz(name, il):
     else:
         # terminal
         if isinstance(il, long):
-            (signed, ) = struct.unpack("l", struct.pack("L", il))
+            (signed, ) = struct.unpack("l", struct.pack("l", il))
             il_str = "{: d} ({:#x})".format(signed, il)
         else:
             il_str = str(il)
