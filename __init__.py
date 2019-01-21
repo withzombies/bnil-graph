@@ -16,8 +16,6 @@
 import sys
 from binaryninja import *
 from collections import defaultdict
-import subprocess
-import tempfile
 
 # Show normal form instructions (non-SSA, non-mapped) in the output
 show_normal = True
@@ -28,55 +26,71 @@ show_mapped = False
 # Include SSA in the output
 show_ssa = True
 
-# Path to dot executable
-dot = '/usr/local/bin/dot'
+def graph_il_insn(g, head, il, label=None):
+    # type: (FlowGraph, FlowGraphNode, LowLevelILInstruction, Optional[str]) -> None
 
-dotfile = None
+    record = FlowGraphNode(g)
+    tokens = []
 
-def print_il_graphviz(name, il):
+    if label:
+        tokens.extend([
+            InstructionTextToken(InstructionTextTokenType.KeywordToken, "{}".format(label)),
+            InstructionTextToken(InstructionTextTokenType.OperandSeparatorToken, ": "),
+        ])
+
     if isinstance(il, MediumLevelILInstruction) or isinstance(il, LowLevelILInstruction):
-        dotfile.write('{} [label="{}", style="rounded"];\n'.format(name, il.operation.name))
+
+        tokens.append(
+            InstructionTextToken(InstructionTextTokenType.InstructionToken, il.operation.name)
+        )
 
         for i, o in enumerate(il.operands):
             edge_label = il.ILOperations[il.operation][i][0]
-            child_name = "{}_{}".format(name, i)
-            print_il_graphviz(child_name, o)
-
-            # print edge
-            dotfile.write('{} -> {} [label="  {}"];\n'.format(name, child_name, edge_label))
+            graph_il_insn(g, record, o, edge_label)
     elif isinstance(il, list):
-        dotfile.write('{} [label="[{}]", shape="diamond"];'.format(name, len(il)))
+        tokens.append(InstructionTextToken(InstructionTextTokenType.IntegerToken, "List[{}]".format(len(il))))
+
         for i, item in enumerate(il):
-            item_name = "{}_{}".format(name, i)
-            print_il_graphviz(item_name, item)
-            dotfile.write('{} -> {} [label="  {}"];'.format(name, item_name, i))
+            edge_label = "[{:d}]".format(i)
+            graph_il_insn(g, record, item, edge_label)
+
     else:
-        # terminal
         if isinstance(il, long):
-            (signed, ) = struct.unpack("l", struct.pack("L", il))
-            il_str = "{: d} ({:#x})".format(signed, il)
+            tokens.append(InstructionTextToken(InstructionTextTokenType.IntegerToken, "{:x}".format(il), value=il))
         else:
-            il_str = str(il)
-        dotfile.write('{} [label="{}", shape="oval"];\n'.format(name, il_str))
-
-def graph_il(il_type, il):
-    # type: (LowLevelILInstruction) -> None
-
-    h = hash(il)
-    name = "g_{}_{}".format(h, il.address)
-    child_name = "{}c".format(name)
-
-    # print head
-    il_str = str(il).replace("{", "\\{").replace("}", "\\}").replace(">", "\\>").replace("<", "\\<")
-    dotfile.write('{} [label="{{ {} | {} @ {:#x} | {} }}", shape="record"];\n'.format(name, il_type, il.instr_index,
-                                                                                      il.address, il_str))
-    print_il_graphviz(child_name, il)
-
-    #print edge
-    dotfile.write('{} -> {};\n'.format(name, child_name))
+            tokens.append(InstructionTextToken(InstructionTextTokenType.TextToken, str(il)))
 
 
-def graph_addr(func, addr):
+
+    record.lines = [ DisassemblyTextLine(tokens), ]
+    g.append(record)
+    head.add_outgoing_edge(BranchType.UnconditionalBranch, record)
+
+
+def graph_il(g, head, type, il):
+    # type: (FlowGraph, FlowGraphNode, str, LowLevelILInstruction) -> None
+
+    il_desc = binaryninja.FlowGraphNode(g)
+    
+    il_desc.lines = [
+        "{}".format(type),
+        "",
+        DisassemblyTextLine([
+            InstructionTextToken(InstructionTextTokenType.AddressDisplayToken, "{:#x}".format(il.instr_index), value=il.instr_index),
+            InstructionTextToken(InstructionTextTokenType.OperandSeparatorToken, " @ "),
+            InstructionTextToken(InstructionTextTokenType.AddressDisplayToken, "{:#x}".format(il.address), value=il.address)
+        ]),
+        il.tokens
+    ]
+
+
+    graph_il_insn(g, il_desc, il)
+    g.append(il_desc)
+
+    head.add_outgoing_edge(BranchType.UnconditionalBranch, il_desc)
+
+
+def graph_ils(bv, g, head, func, addr):
     lookup = defaultdict(lambda: defaultdict(list))
 
     llil = func.low_level_il
@@ -111,23 +125,28 @@ def graph_addr(func, addr):
                 for mil in block:
                     lookup['MappedMediumLevelILSSA'][mil.address].append(mil)
 
-    dotfile.write("digraph G {\n")
-    dotfile.write('node [shape="rect"];\n')
+
     for il_type in sorted(lookup):
         ils = lookup[il_type][addr]
         for il in sorted(ils):
-            graph_il(il_type, il)
-    dotfile.write("}\n")
+            graph_il(g, head, il_type, il)
 
 def graph_bnil(bv, addr):
-    global dotfile
-    dotfile = tempfile.NamedTemporaryFile(mode="w", suffix=".dot")
-    blocks = bv.get_basic_blocks_at(addr)
-    func = blocks[0].function
-    graph_addr(func, addr)
-    dotfile.flush()
+    blocks = bv.get_basic_blocks_at(addr) # type: List[BasicBlock]
+    function = blocks[0].function # type: Function
+    g = binaryninja.FlowGraph()
 
-    subprocess.check_call([dot, '-Tpng', '-O', dotfile.name])
-    bv.show_html_report("BNIL Graph", "<html><img src='{}.png'></html>".format(dotfile.name))
+    (tokens, ) = [tokens for tokens, insn_addr in function.instructions if insn_addr == addr]
+
+    head = binaryninja.FlowGraphNode(g)
+    head.lines = [
+        tokens
+    ]
+    g.append(head)
+
+    graph_ils(bv, g, head, function, addr)
+
+    g.show("Instruction Graph ({:#x})".format(addr))
+
 
 PluginCommand.register_for_address("BNIL Instruction Graph", "View BNIL Instruction Information", graph_bnil)
