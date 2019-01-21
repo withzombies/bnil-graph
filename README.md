@@ -1,20 +1,6 @@
 # bnil-graph
 A BinaryNinja plugin to graph a BNIL instruction tree
 
-## Dependencies
-
-This plugin requires [graphviz](http://www.graphviz.org/).
-
-You can install it on macOS via brew:
-```bash
-$ brew install graphviz
-```
-
-Or on Ubuntu via apt:
-```bash
-$ sudo apt install graphviz
-```
-
 ## Installation
 
 1. Clone the repository to your prefered location: `$ git clone https://github.com/withzombies/bnil-graph.git`
