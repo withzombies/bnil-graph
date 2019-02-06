@@ -11,13 +11,13 @@
 		},
 		"dependencies": {
 			"pip": [],
-			"apt": ["graphviz"]
+			"apt": []
 		},
-		"version": "1.0.0",
+		"version": "1.1.0",
 		"author": "Ryan Stortz (@withzombies)",
 		"minimumBinaryNinjaVersion": {
-			"dev": "1.0.776",
-			"release": "1.0.776"
+			"dev": "1.0.1111",
+			"release": "1.0.1111"
 		}
 	}
 }
