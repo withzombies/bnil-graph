@@ -114,7 +114,7 @@ def graph_il(g, head, type, il):
         il.tokens,
     ]
 
-    graph_il_insn(g, il_desc, il)
+    graph_il_insn(g, il_desc, il, "operation")
     g.append(il_desc)
 
     head.add_outgoing_edge(BranchType.UnconditionalBranch, il_desc)
