@@ -121,6 +121,15 @@ def graph_il(g, head, type, il):
 
 
 def graph_ils(bv, g, head, func, addr):
+    lookup = collect_ils(bv, func)
+
+    for il_type in sorted(lookup):
+        ils = lookup[il_type][addr]
+        for il in sorted(ils):
+            graph_il(g, head, il_type, il)
+
+
+def collect_ils(bv, func):
     lookup = defaultdict(lambda: defaultdict(list))
 
     llil = func.low_level_il
@@ -155,10 +164,7 @@ def graph_ils(bv, g, head, func, addr):
                 for mil in block:
                     lookup["MappedMediumLevelILSSA"][mil.address].append(mil)
 
-    for il_type in sorted(lookup):
-        ils = lookup[il_type][addr]
-        for il in sorted(ils):
-            graph_il(g, head, il_type, il)
+    return lookup
 
 
 def graph_bnil(bv, addr):
@@ -179,6 +185,86 @@ def graph_bnil(bv, addr):
     g.show("Instruction Graph ({:#x})".format(addr))
 
 
+def match_condition(name, o):
+    match = []
+
+    if isinstance(o, LowLevelILInstruction) or isinstance(o, MediumLevelILInstruction):
+        if isinstance(o, LowLevelILInstruction):
+            operation_class = "LowLevelILOperation"
+        elif isinstance(o, MediumLevelILInstruction):
+            operation_class = "MediumLevelILOperation"
+
+        match += ["# {}".format(str(o))]
+        match += [
+            "if {}.operation != {}.{}:".format(name, operation_class, o.operation.name)
+        ]
+        match += ["    return False\n"]
+
+        for i, oo in enumerate(o.operands):
+            oo_name = o.ILOperations[o.operation][i][0]
+            full_name = "{}.{}".format(name, oo_name)
+            cond = match_condition(full_name, oo)
+            match += cond
+
+    elif isinstance(o, list):
+        match += ["if len({}) != {}:".format(name, len(o))]
+        match += ["    return False\n"]
+
+        # match the sub conditions too
+        for i, sub_insn in enumerate(o):
+            full_name = "{}[{}]".format(name, i)
+            cond = match_condition(full_name, sub_insn)
+            match += cond
+
+    elif isinstance(o, int) or isinstance(o, long):
+        match += ["if {} != {:#x}:".format(name, o)]
+        match += ["    return False\n"]
+    elif isinstance(o, ILRegister):
+        match += ["if {} != '{}':".format(name, o.name)]
+        match += ["    return False\n"]
+
+    elif isinstance(o, SSARegister):
+        match += ["if {} != '{}':".format(name, o.reg.name)]
+        match += ["    return False\n"]
+
+        match += ["if {}.version != {}:".format(name, o.version)]
+        match += ["    return False\n"]
+
+    else:
+        match += ["if {} != {}:".format(name, o)]
+        match += ["    return False\n"]
+
+    return match
+
+
+def match_bnil(bv, addr):
+    blocks = bv.get_basic_blocks_at(addr)  # type: List[BasicBlock]
+    function = blocks[0].function  # type: Function
+
+    lookup = collect_ils(bv, function)
+
+    report = ""
+
+    for ty in lookup.keys():
+        llil_insns = lookup[ty][addr]
+        for idx, insn in enumerate(sorted(llil_insns)):
+            f = "def match_{}_{:x}_{}(insn):\n".format(ty, addr, idx)
+            cond = match_condition("insn", insn)
+            f += "\n".join(["    " + x for x in cond])
+
+            f += "\n    return True\n"
+
+            report += f + "\n\n"
+
+    show_plain_text_report("BNIL Matcher", report)
+
+
 PluginCommand.register_for_address(
     "BNIL Instruction Graph", "View BNIL Instruction Information", graph_bnil
+)
+
+PluginCommand.register_for_address(
+    "BNIL Python Match Generator",
+    "Generate a python function to match the selection instructions",
+    match_bnil,
 )
