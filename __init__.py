@@ -220,11 +220,11 @@ def match_condition(name, o):
         match += ["if {} != {:#x}:".format(name, o)]
         match += ["    return False\n"]
     elif isinstance(o, ILRegister):
-        match += ["if {} != '{}':".format(name, o.name)]
+        match += ["if {}.name != '{}':".format(name, o.name)]
         match += ["    return False\n"]
 
     elif isinstance(o, SSARegister):
-        match += ["if {} != '{}':".format(name, o.reg.name)]
+        match += ["if {}.reg.name != '{}':".format(name, o.reg.name)]
         match += ["    return False\n"]
 
         match += ["if {}.version != {}:".format(name, o.version)]
