@@ -26,6 +26,9 @@ show_mapped = False
 # Include SSA in the output
 show_ssa = True
 
+# Support python 3 and python 2
+if sys.version_info > (3,):
+    long = int
 
 def graph_il_insn(g, head, il, label=None):
     # type: (FlowGraph, FlowGraphNode, LowLevelILInstruction, Optional[str]) -> None
@@ -70,7 +73,7 @@ def graph_il_insn(g, head, il, label=None):
             graph_il_insn(g, record, item, edge_label)
 
     else:
-        if isinstance(il, int):
+        if isinstance(il, long):
             tokens.append(
                 InstructionTextToken(
                     InstructionTextTokenType.IntegerToken, "{:x}".format(il), value=il
@@ -216,7 +219,7 @@ def match_condition(name, o):
             cond = match_condition(full_name, sub_insn)
             match += cond
 
-    elif isinstance(o, int) or isinstance(o, int):
+    elif isinstance(o, int) or isinstance(o, long):
         match += ["if {} != {:#x}:".format(name, o)]
         match += ["    return False\n"]
     elif isinstance(o, ILRegister):
