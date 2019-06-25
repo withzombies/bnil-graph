@@ -70,7 +70,7 @@ def graph_il_insn(g, head, il, label=None):
             graph_il_insn(g, record, item, edge_label)
 
     else:
-        if isinstance(il, long):
+        if isinstance(il, int):
             tokens.append(
                 InstructionTextToken(
                     InstructionTextTokenType.IntegerToken, "{:x}".format(il), value=il
@@ -216,7 +216,7 @@ def match_condition(name, o):
             cond = match_condition(full_name, sub_insn)
             match += cond
 
-    elif isinstance(o, int) or isinstance(o, long):
+    elif isinstance(o, int) or isinstance(o, int):
         match += ["if {} != {:#x}:".format(name, o)]
         match += ["    return False\n"]
     elif isinstance(o, ILRegister):
