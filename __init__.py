@@ -48,9 +48,7 @@ def graph_il_insn(g, head, il, label=None):
             ]
         )
 
-    if isinstance(il, MediumLevelILInstruction) or isinstance(
-        il, LowLevelILInstruction
-    ):
+    if isinstance(il, (MediumLevelILInstruction, LowLevelILInstruction)):
 
         tokens.append(
             InstructionTextToken(
@@ -191,7 +189,7 @@ def graph_bnil(bv, addr):
 def match_condition(name, o):
     match = []
 
-    if isinstance(o, LowLevelILInstruction) or isinstance(o, MediumLevelILInstruction):
+    if isinstance(o, (LowLevelILInstruction, MediumLevelILInstruction)):
         if isinstance(o, LowLevelILInstruction):
             operation_class = "LowLevelILOperation"
         elif isinstance(o, MediumLevelILInstruction):
@@ -219,7 +217,7 @@ def match_condition(name, o):
             cond = match_condition(full_name, sub_insn)
             match += cond
 
-    elif isinstance(o, int) or isinstance(o, long):
+    elif isinstance(o, (int, long)):
         match += ["if {} != {:#x}:".format(name, o)]
         match += ["    return False\n"]
     elif isinstance(o, ILRegister):
