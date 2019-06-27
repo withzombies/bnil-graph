@@ -49,6 +49,7 @@ Settings().register_setting("bnil-graph.showSSA", """
 if sys.version_info > (3,):
     long = int
 
+
 def graph_il_insn(g, head, il, label=None):
     # type: (FlowGraph, FlowGraphNode, LowLevelILInstruction, Optional[str]) -> None
 
@@ -75,9 +76,19 @@ def graph_il_insn(g, head, il, label=None):
             )
         )
 
-        for i, o in enumerate(il.operands):
-            edge_label = il.ILOperations[il.operation][i][0]
-            graph_il_insn(g, record, o, edge_label)
+        ops = enumerate(il.operands)
+        for i, o in ops:
+            edge_label, ty = il.ILOperations[il.operation][i]
+
+            if ty == 'reg_stack_ssa_dest_and_src' or ty == 'var_ssa_dest_and_src':
+                # handle the ssa_dest_and_src operand types
+                next_label = 'next' if edge_label == 'prev' else 'dest'
+                graph_il_insn(g, record, o, next_label)
+                i, o2 = next(ops)
+                graph_il_insn(g, record, o2, edge_label)
+            else:
+                # handle everything else
+                graph_il_insn(g, record, o, edge_label)
     elif isinstance(il, list):
         tokens.append(
             InstructionTextToken(
@@ -223,11 +234,24 @@ def match_condition(name, o):
         ]
         match += ["    return False\n"]
 
-        for i, oo in enumerate(o.operands):
-            oo_name = o.ILOperations[o.operation][i][0]
-            full_name = "{}.{}".format(name, oo_name)
-            cond = match_condition(full_name, oo)
-            match += cond
+        ops = enumerate(o.operands)
+        for i, oo in ops:
+            oo_name, ty = o.ILOperations[o.operation][i]
+            if ty == 'reg_stack_ssa_dest_and_src' or ty == 'var_ssa_dest_and_src':
+                next_name = 'next' if oo_name == 'prev' else 'dest'
+                full_name = "{}.{}".format(name, next_name)
+                cond = match_condition(full_name, oo)
+                match += cond
+
+                i, oo = next(ops)
+                full_name = "{}.{}".format(name, oo_name)
+                cond = match_condition(full_name, oo)
+                match += cond
+            else:
+                full_name = "{}.{}".format(name, oo_name)
+                cond = match_condition(full_name, oo)
+                match += cond
+
 
     elif isinstance(o, list):
         match += ["if len({}) != {}:".format(name, len(o))]
