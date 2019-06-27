@@ -17,14 +17,33 @@ import sys
 from binaryninja import *
 from collections import defaultdict
 
-# Show normal form instructions (non-SSA, non-mapped) in the output
-show_normal = True
+Settings().register_group("bnil-graph", "BNIL Graph")
+Settings().register_setting("bnil-graph.showCommon", """
+    {
+        "title" : "Show Common ILs",
+        "type" : "boolean",
+        "default" : true,
+        "description" : "Show common forms (non-SSA, non-mapped) in the output."
+    }
+    """)
 
-# Included MappedMediumLevelIL in the output
-show_mapped = False
+Settings().register_setting("bnil-graph.showMapped", """
+    {
+        "title" : "Include MMLIL",
+        "type" : "boolean",
+        "default" : false,
+        "description" : "Show the MappedMediumLevelIL form in the output."
+    }
+    """)
 
-# Include SSA in the output
-show_ssa = True
+Settings().register_setting("bnil-graph.showSSA", """
+    {
+        "title" : "Include SSA",
+        "type" : "boolean",
+        "default" : true,
+        "description" : "Include SSA forms in the output."
+    }
+    """)
 
 # Support python 3 and python 2
 if sys.version_info > (3,):
@@ -135,8 +154,11 @@ def collect_ils(bv, func):
 
     llil = func.low_level_il
     mlil = func.medium_level_il
+    show_common = Settings().get_bool("bnil-graph.showCommon")
+    show_mapped = Settings().get_bool("bnil-graph.showMapped")
+    show_ssa = Settings().get_bool("bnil-graph.showSSA")
 
-    if show_normal:
+    if show_common:
         for block in llil:
             for il in block:
                 lookup["LowLevelIL"][il.address].append(il)
