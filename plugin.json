@@ -13,7 +13,7 @@
 			"pip": [],
 			"apt": []
 		},
-		"version": "1.1.0",
+		"version": "1.2.0",
 		"author": "Ryan Stortz (@withzombies)",
 		"minimumBinaryNinjaVersion": {
 			"dev": "1.0.1111",
