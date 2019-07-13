@@ -1,8 +1,14 @@
-# bnil-graph
+# BNIL Instruction Graph
 A BinaryNinja plugin to graph a BNIL instruction tree and meta-program python instruction matchers.
 
 ## Installation
 
+Installation is supported two ways, the first using the new plugin manager and the second being a manual install.
+
+### Plugin Manager
+Use the new plugin manager by selecting "Manage Plugins" from the "Edit" menu. Search the plugin list for "BNIL Instruction Graph", right click on it and click "Install" then right click again and select "Enable".
+
+## Manual Installation
 1. Clone the repository to your prefered location: `$ git clone https://github.com/withzombies/bnil-graph.git`
 1. Change to the Binary Ninja plugins directory: `$ cd ~/Library/Application\ Support/Binary\ Ninja/plugins`
 1. Create a symlink to the folder: `$ ln -s ~/git/bnil-graph .`
