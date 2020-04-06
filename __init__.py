@@ -216,7 +216,7 @@ def graph_bnil(bv, addr):
 
     graph_ils(bv, g, head, function, addr)
 
-    g.show("Instruction Graph ({:#x})".format(addr))
+    bv.show_graph_report("Instruction Graph ({:#x})".format(addr), g)
 
 
 def match_condition(name, o):
