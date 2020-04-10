@@ -49,6 +49,20 @@ Settings().register_setting("bnil-graph.showSSA", """
 if sys.version_info > (3,):
     long = int
 
+def show_graph_report(bv, g, name):
+
+    # 1.3.2086-dev
+    major, minor, patch = binaryninja.core_version().split('.')
+    major = int(major)
+    minor = int(minor)
+    patch = int(patch.split('-')[0])
+
+    if major == 1 and minor <= 3 and patch < 2086:
+        g.show(name)
+        return
+
+    bv.show_graph_report(name, g)
+
 
 def graph_il_insn(g, head, il, label=None):
     # type: (FlowGraph, FlowGraphNode, LowLevelILInstruction, Optional[str]) -> None
@@ -107,6 +121,27 @@ def graph_il_insn(g, head, il, label=None):
                     InstructionTextTokenType.IntegerToken, "{:x}".format(il), value=il
                 )
             )
+        elif isinstance(il, lowlevelil.SSARegister):
+            tokens.append(
+                InstructionTextToken(InstructionTextTokenType.TextToken, "<SSARegister>")
+            )
+
+            graph_il_insn(g, record, il.reg, "reg")
+            graph_il_insn(g, record, il.version, "version")
+        elif isinstance(il, mediumlevelil.SSAVariable):
+            tokens.append(
+                InstructionTextToken(InstructionTextTokenType.TextToken, "<SSAVariable>")
+            )
+
+            graph_il_insn(g, record, il.var, "var")
+            graph_il_insn(g, record, il.version, "version")
+        elif isinstance(il, function.Variable):
+            tokens.append(
+                InstructionTextToken(InstructionTextTokenType.TextToken, "<Variable>")
+            )
+
+            graph_il_insn(g, record, il.name, "name")
+            graph_il_insn(g, record, il.type, "type")
         else:
             tokens.append(
                 InstructionTextToken(InstructionTextTokenType.TextToken, str(il))
@@ -216,7 +251,7 @@ def graph_bnil(bv, addr):
 
     graph_ils(bv, g, head, function, addr)
 
-    g.show("Instruction Graph ({:#x})".format(addr))
+    show_graph_report(bv, g, "Instruction Graph ({:#x})".format(addr))
 
 
 def match_condition(name, o):
@@ -276,6 +311,14 @@ def match_condition(name, o):
 
         match += ["if {}.version != {}:".format(name, o.version)]
         match += ["    return False\n"]
+
+    elif isinstance(o, SSAVariable):
+        match += ["if {}.var.name != '{}':".format(name, o.var.name)]
+        match += ["    return False\n"]
+
+        match += ["if {}.version != {}:".format(name, o.version)]
+        match += ["    return False\n"]
+
 
     else:
         match += ["if {} != {}:".format(name, o)]
