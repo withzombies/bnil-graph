@@ -82,7 +82,7 @@ def graph_il_insn(g, head, il, label=None):
             ]
         )
 
-    if isinstance(il, (MediumLevelILInstruction, LowLevelILInstruction)):
+    if isinstance(il, (HighLevelILInstruction, MediumLevelILInstruction, LowLevelILInstruction)):
 
         tokens.append(
             InstructionTextToken(
@@ -157,7 +157,7 @@ def graph_il(g, head, type, il):
 
     il_desc = binaryninja.FlowGraphNode(g)
 
-    il_desc.lines = [
+    lines = [
         "{}".format(type),
         "",
         DisassemblyTextLine(
@@ -177,8 +177,16 @@ def graph_il(g, head, type, il):
                 ),
             ]
         ),
-        il.tokens,
     ]
+
+
+    if hasattr(il, 'lines'):
+        for line in il.lines:
+            lines.append(line.tokens)
+    else:
+        lines.append(il.tokens)
+
+    il_desc.lines = lines
 
     graph_il_insn(g, il_desc, il, "operation")
     g.append(il_desc)
@@ -200,6 +208,7 @@ def collect_ils(bv, func):
 
     llil = func.low_level_il
     mlil = func.medium_level_il
+    hlil = func.high_level_il
     show_common = Settings().get_bool("bnil-graph.showCommon")
     show_mapped = Settings().get_bool("bnil-graph.showMapped")
     show_ssa = Settings().get_bool("bnil-graph.showSSA")
@@ -213,6 +222,10 @@ def collect_ils(bv, func):
             for mil in block:
                 lookup["MediumLevelIL"][mil.address].append(mil)
 
+        for block in hlil:
+            for hil in block:
+                lookup["HighLevelIL"][hil.address].append(hil)
+
     if show_ssa:
         for block in llil.ssa_form:
             for il in block:
@@ -221,6 +234,10 @@ def collect_ils(bv, func):
         for block in mlil.ssa_form:
             for mil in block:
                 lookup["MediumLevelILSSA"][mil.address].append(mil)
+
+        for block in hlil.ssa_form:
+            for hil in block:
+                lookup["HighLevelILSSA"][hil.address].append(hil)
 
     if show_mapped:
         mmlil = llil.mapped_medium_level_il
@@ -257,11 +274,13 @@ def graph_bnil(bv, addr):
 def match_condition(name, o):
     match = []
 
-    if isinstance(o, (LowLevelILInstruction, MediumLevelILInstruction)):
+    if isinstance(o, (LowLevelILInstruction, MediumLevelILInstruction, HighLevelILInstruction)):
         if isinstance(o, LowLevelILInstruction):
             operation_class = "LowLevelILOperation"
         elif isinstance(o, MediumLevelILInstruction):
             operation_class = "MediumLevelILOperation"
+        elif isinstance(o, HighLevelILInstruction):
+            operation_class = "HighLevelILOperation"
 
         match += ["# {}".format(str(o))]
         match += [
