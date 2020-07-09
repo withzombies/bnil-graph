@@ -16,6 +16,7 @@
 import sys
 from binaryninja import *
 from collections import defaultdict
+import re
 
 Settings().register_group("bnil-graph", "BNIL Graph")
 Settings().register_setting("bnil-graph.showCommon", """
@@ -52,10 +53,11 @@ if sys.version_info > (3,):
 def show_graph_report(bv, g, name):
 
     # 1.3.2086-dev
-    major, minor, patch = binaryninja.core_version().split('.')
+    # also 2.1.2260 Personal
+    major, minor, patch, _ = re.match("(\d+)\.(\d+)\.(\d+)([- ]\w+)?", a).groups()
     major = int(major)
     minor = int(minor)
-    patch = int(patch.split('-')[0])
+    patch = int(patch)
 
     if major == 1 and minor <= 3 and patch < 2086:
         g.show(name)
