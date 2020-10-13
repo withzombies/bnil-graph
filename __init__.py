@@ -256,9 +256,21 @@ def collect_ils(bv, func):
     return lookup
 
 
+def get_function_containing_instruction_at(bv, addr):
+    # Ensure that the `Function` returned contains an instruction starting at `addr`
+    # This is needed in the case of overlapping functions where instructions are not aligned
+    functions = bv.get_functions_containing(addr)  # type: List[Function]
+    for func in functions:
+        instr_addrs = [instr_addr for _, instr_addr in func.instructions]
+        if addr in instr_addrs:
+            return func
+
+    # Should never be reached
+    log_error("Found no function with instruction at address {:#x})".format(addr))
+
+
 def graph_bnil(bv, addr):
-    blocks = bv.get_basic_blocks_at(addr)  # type: List[BasicBlock]
-    function = blocks[0].function  # type: Function
+    function = get_function_containing_instruction_at(bv, addr)  # type: Function
     g = binaryninja.FlowGraph()
 
     (tokens,) = [
@@ -350,8 +362,7 @@ def match_condition(name, o):
 
 
 def match_bnil(bv, addr):
-    blocks = bv.get_basic_blocks_at(addr)  # type: List[BasicBlock]
-    function = blocks[0].function  # type: Function
+    function = get_function_containing_instruction_at(bv, addr) # type: Function
 
     lookup = collect_ils(bv, function)
 
