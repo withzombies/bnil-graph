@@ -386,11 +386,11 @@ def match_bnil(bv, addr):
 
 
 PluginCommand.register_for_address(
-    "BNIL Instruction Graph", "View BNIL Instruction Information", graph_bnil
+    "BNIL\\Instruction Graph", "View BNIL Instruction Information", graph_bnil
 )
 
 PluginCommand.register_for_address(
-    "BNIL Python Match Generator",
+    "BNIL\\Python Match Generator",
     "Generate a python function to match the selection instructions",
     match_bnil,
 )
