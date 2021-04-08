@@ -24,7 +24,8 @@ Settings().register_setting("bnil-graph.showCommon", """
         "title" : "Show Common ILs",
         "type" : "boolean",
         "default" : true,
-        "description" : "Show common forms (non-SSA, non-mapped) in the output."
+        "description" : "Show common forms (non-SSA, non-mapped) in the output.",
+        "ignore" : ["SettingsProjectScope", "SettingsResourceScope"]
     }
     """)
 
@@ -33,7 +34,8 @@ Settings().register_setting("bnil-graph.showMapped", """
         "title" : "Include MMLIL",
         "type" : "boolean",
         "default" : false,
-        "description" : "Show the MappedMediumLevelIL form in the output."
+        "description" : "Show the MappedMediumLevelIL form in the output.",
+        "ignore" : ["SettingsProjectScope", "SettingsResourceScope"]
     }
     """)
 
@@ -42,7 +44,8 @@ Settings().register_setting("bnil-graph.showSSA", """
         "title" : "Include SSA",
         "type" : "boolean",
         "default" : true,
-        "description" : "Include SSA forms in the output."
+        "description" : "Include SSA forms in the output.",
+        "ignore" : ["SettingsProjectScope", "SettingsResourceScope"]
     }
     """)
 
