@@ -50,8 +50,8 @@ Settings().register_setting("bnil-graph.showSSA", """
 if sys.version_info > (3,):
     long = int
 
-def show_graph_report(bv, g, name):
 
+def show_graph_report(bv, g, name):
     # 1.3.2086-dev
     # also 2.1.2260 Personal
     version = binaryninja.core_version()
@@ -92,20 +92,23 @@ def graph_il_insn(g, head, il, label=None):
                 InstructionTextTokenType.InstructionToken, il.operation.name
             )
         )
-
-        ops = enumerate(il.operands)
-        for i, o in ops:
+        i = 0
+        ops = iter(il.operands)
+        for o in ops:
             edge_label, ty = il.ILOperations[il.operation][i]
 
             if ty == 'reg_stack_ssa_dest_and_src' or ty == 'var_ssa_dest_and_src':
                 # handle the ssa_dest_and_src operand types
                 next_label = 'next' if edge_label == 'prev' else 'dest'
                 graph_il_insn(g, record, o, next_label)
-                i, o2 = next(ops)
+                o2 = next(ops)
                 graph_il_insn(g, record, o2, edge_label)
             else:
                 # handle everything else
                 graph_il_insn(g, record, o, edge_label)
+
+            i += 1
+
     elif isinstance(il, list):
         tokens.append(
             InstructionTextToken(
@@ -181,7 +184,6 @@ def graph_il(g, head, type, il):
             ]
         ),
     ]
-
 
     if hasattr(il, 'lines'):
         for line in il.lines:
