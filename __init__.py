@@ -92,20 +92,23 @@ def graph_il_insn(g, head, il, label=None):
                 InstructionTextTokenType.InstructionToken, il.operation.name
             )
         )
-
-        ops = enumerate(il.operands)
-        for i, o in ops:
+        i = 0
+        ops = iter(il.operands)
+        for o in ops:
             edge_label, ty = il.ILOperations[il.operation][i]
 
             if ty == 'reg_stack_ssa_dest_and_src' or ty == 'var_ssa_dest_and_src':
                 # handle the ssa_dest_and_src operand types
                 next_label = 'next' if edge_label == 'prev' else 'dest'
                 graph_il_insn(g, record, o, next_label)
-                i, o2 = next(ops)
+                o2 = next(ops)
                 graph_il_insn(g, record, o2, edge_label)
             else:
                 # handle everything else
                 graph_il_insn(g, record, o, edge_label)
+
+            i += 1
+
     elif isinstance(il, list):
         tokens.append(
             InstructionTextToken(
