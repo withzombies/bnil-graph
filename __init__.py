@@ -50,8 +50,8 @@ Settings().register_setting("bnil-graph.showSSA", """
 if sys.version_info > (3,):
     long = int
 
-def show_graph_report(bv, g, name):
 
+def show_graph_report(bv, g, name):
     # 1.3.2086-dev
     # also 2.1.2260 Personal
     version = binaryninja.core_version()
@@ -184,7 +184,6 @@ def graph_il(g, head, type, il):
             ]
         ),
     ]
-
 
     if hasattr(il, 'lines'):
         for line in il.lines:
