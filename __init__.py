@@ -132,7 +132,7 @@ def graph_il_insn(g, head, il, label=None):
         if isinstance(il, long):
             tokens.append(
                 InstructionTextToken(
-                    InstructionTextTokenType.IntegerToken, "{:x}".format(il), value=il
+                    InstructionTextTokenType.IntegerToken, "{:#x}".format(il), value=il
                 )
             )
         elif isinstance(il, lowlevelil.SSARegister):
