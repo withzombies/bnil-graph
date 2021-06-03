@@ -93,19 +93,30 @@ def graph_il_insn(g, head, il, label=None):
             )
         )
 
+        op_index = 0
         ops = enumerate(il.operands)
-        for i, o in ops:
-            edge_label, ty = il.ILOperations[il.operation][i]
+        for _, o in ops:
+            edge_label, ty = il.ILOperations[il.operation][op_index]
 
+            # For var_ssa_dest_and_src, it has four operands while the ILOperations only records three
+            # >>> il
+            # <il: b#1.b1 = 0x61 @ b#0>
+            # >>> il.ILOperations[il.operation]
+            # [('prev', 'var_ssa_dest_and_src'), ('offset', 'int'), ('src', 'expr')]
+            # >>> il.operands
+            # [<ssa <var struct B b> version 1>, <ssa <var struct B b> version 0>, 0, <il: 0x61>]
             if ty == 'reg_stack_ssa_dest_and_src' or ty == 'var_ssa_dest_and_src':
                 # handle the ssa_dest_and_src operand types
                 next_label = 'next' if edge_label == 'prev' else 'dest'
                 graph_il_insn(g, record, o, next_label)
-                i, o2 = next(ops)
+                # This will consume an element in ops, without increacing op_index
+                _, o2 = next(ops)
                 graph_il_insn(g, record, o2, edge_label)
             else:
                 # handle everything else
                 graph_il_insn(g, record, o, edge_label)
+                op_index += 1
+
     elif isinstance(il, list):
         tokens.append(
             InstructionTextToken(
