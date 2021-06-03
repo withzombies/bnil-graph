@@ -178,7 +178,7 @@ def graph_il(g, head, type, il):
             [
                 InstructionTextToken(
                     InstructionTextTokenType.AddressDisplayToken,
-                    "{:#x}".format(il.instr_index),
+                    "{:#d}".format(il.instr_index),
                     value=il.instr_index,
                 ),
                 InstructionTextToken(
