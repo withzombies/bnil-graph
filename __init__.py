@@ -52,17 +52,20 @@ if sys.version_info > (3,):
 
 def show_graph_report(bv, g, name):
 
-    # 1.3.2086-dev
-    # also 2.1.2260 Personal
-    version = binaryninja.core_version()
-    major, minor, patch, _ = re.match("(\d+)\.(\d+)\.(\d+)([- ]\w+)?", version).groups()
-    major = int(major)
-    minor = int(minor)
-    patch = int(patch)
+    try:
+        # 1.3.2086-dev
+        # also 2.1.2260 Personal
+        version = binaryninja.core_version()
+        major, minor, patch, _ = re.match("(\d+)\.(\d+)\.(\d+)([- ]\w+)?", version).groups()
+        major = int(major)
+        minor = int(minor)
+        patch = int(patch)
 
-    if major == 1 and minor <= 3 and patch < 2086:
-        g.show(name)
-        return
+        if major == 1 and minor <= 3 and patch < 2086:
+            g.show(name)
+            return
+    except:
+        pass
 
     bv.show_graph_report(name, g)
 
