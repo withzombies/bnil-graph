@@ -102,7 +102,11 @@ def graph_il_insn(g, head, il, label=None):
         op_index = 0
         ops = enumerate(il.operands)
         for _, o in ops:
-            edge_label, ty = il.ILOperations[il.operation][op_index]
+            try:
+                edge_label, ty = il.ILOperations[il.operation][op_index]
+            except IndexError:
+                # Some operations don't have operations (like HLIL_NORET)
+                continue
 
             # For var_ssa_dest_and_src, it has four operands while the ILOperations only records three
             # >>> il
