@@ -231,49 +231,56 @@ def graph_ils(bv, g, head, func, addr):
 def collect_ils(bv, func):
     lookup = defaultdict(lambda: defaultdict(list))
 
-    llil = func.low_level_il
-    mlil = func.medium_level_il
-    hlil = func.high_level_il
+    llil = func.llil_if_available
+    mlil = func.mlil_if_available
+    hlil = func.hlil_if_available
     show_common = Settings().get_bool("bnil-graph.showCommon")
     show_mapped = Settings().get_bool("bnil-graph.showMapped")
     show_ssa = Settings().get_bool("bnil-graph.showSSA")
 
     if show_common:
-        for block in llil:
-            for il in block:
-                lookup["LowLevelIL"][il.address].append(il)
+        if llil is not None:
+            for block in llil:
+                for il in block:
+                    lookup["LowLevelIL"][il.address].append(il)
 
-        for block in mlil:
-            for mil in block:
-                lookup["MediumLevelIL"][mil.address].append(mil)
+        if mlil is not None:
+            for block in mlil:
+                for mil in block:
+                    lookup["MediumLevelIL"][mil.address].append(mil)
 
-        for block in hlil:
-            for hil in block:
-                lookup["HighLevelIL"][hil.address].append(hil)
+        if hlil is not None:
+            for block in hlil:
+                for hil in block:
+                    lookup["HighLevelIL"][hil.address].append(hil)
 
     if show_ssa:
-        for block in llil.ssa_form:
-            for il in block:
-                lookup["LowLevelILSSA"][il.address].append(il)
+        if llil is not None and llil.ssa_form is not None:
+            for block in llil.ssa_form:
+                for il in block:
+                    lookup["LowLevelILSSA"][il.address].append(il)
 
-        for block in mlil.ssa_form:
-            for mil in block:
-                lookup["MediumLevelILSSA"][mil.address].append(mil)
+        if mlil is not None and mlil.ssa_form is not None:
+            for block in mlil.ssa_form:
+                for mil in block:
+                    lookup["MediumLevelILSSA"][mil.address].append(mil)
 
-        for block in hlil.ssa_form:
-            for hil in block:
-                lookup["HighLevelILSSA"][hil.address].append(hil)
+        if hlil is not None and hlil.ssa_form is not None:
+            for block in hlil.ssa_form:
+                for hil in block:
+                    lookup["HighLevelILSSA"][hil.address].append(hil)
 
     if show_mapped:
-        mmlil = llil.mapped_medium_level_il
-        for block in mmlil:
-            for mil in block:
-                lookup["MappedMediumLevelIL"][mil.address].append(mil)
-
-        if show_ssa:
-            for block in mmlil.ssa_form:
+        if llil is not None and llil.mapped_medium_level_il is not None:
+            mmlil = llil.mapped_medium_level_il
+            for block in mmlil:
                 for mil in block:
-                    lookup["MappedMediumLevelILSSA"][mil.address].append(mil)
+                    lookup["MappedMediumLevelIL"][mil.address].append(mil)
+
+            if show_ssa:
+                for block in mmlil.ssa_form:
+                    for mil in block:
+                        lookup["MappedMediumLevelILSSA"][mil.address].append(mil)
 
     return lookup
 
