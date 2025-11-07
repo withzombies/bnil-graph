@@ -236,18 +236,18 @@ def collect_ils(bv: BinaryView, func: Function) -> defaultdict[str, defaultdict[
 
     if show_common:
         if llil is not None:
-            for block in llil:
-                for il in block:
+            for llil_block in llil:
+                for il in llil_block:
                     lookup["LowLevelIL"][il.address].append(il)
 
         if mlil is not None:
-            for block in mlil:
-                for mil in block:
+            for mlil_block in mlil:
+                for mil in mlil_block:
                     lookup["MediumLevelIL"][mil.address].append(mil)
 
         if hlil is not None:
-            for block in hlil:
-                for hil in block:
+            for hlil_block in hlil:
+                for hil in hlil_block:
                     lookup["HighLevelIL"][hil.address].append(hil)
 
     if show_ssa:
@@ -262,20 +262,20 @@ def collect_ils(bv: BinaryView, func: Function) -> defaultdict[str, defaultdict[
                     lookup["MediumLevelILSSA"][mil.address].append(mil)
 
         if hlil is not None and hlil.ssa_form is not None:
-            for block in hlil.ssa_form:
-                for hil in block:
+            for hlil_block in hlil.ssa_form:
+                for hil in hlil_block:
                     lookup["HighLevelILSSA"][hil.address].append(hil)
 
     if show_mapped:
         if llil is not None and llil.mapped_medium_level_il is not None:
             mmlil = llil.mapped_medium_level_il
-            for block in mmlil:
-                for mil in block:
+            for mmlil_block in mmlil:
+                for mil in mmlil_block:
                     lookup["MappedMediumLevelIL"][mil.address].append(mil)
 
-            if show_ssa:
-                for block in mmlil.ssa_form:
-                    for mil in block:
+            if show_ssa and mmlil.ssa_form is not None:
+                for mmlil_block in mmlil.ssa_form:
+                    for mil in mmlil_block:
                         lookup["MappedMediumLevelILSSA"][mil.address].append(mil)
 
     return lookup
