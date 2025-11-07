@@ -59,7 +59,7 @@ def show_graph_report(bv, g, name):
         # 1.3.2086-dev
         # also 2.1.2260 Personal
         version = binaryninja.core_version()
-        major, minor, patch, _ = re.match("(\d+)\.(\d+)\.(\d+)([- ]\w+)?", version).groups()
+        major, minor, patch, _ = re.match(r"(\d+)\.(\d+)\.(\d+)([- ]\w+)?", version).groups()
         major = int(major)
         minor = int(minor)
         patch = int(patch)
