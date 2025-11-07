@@ -57,7 +57,12 @@ def plugin_show_graph_report(bv: BinaryView, g: FlowGraph, name: str) -> None:
         # 1.3.2086-dev
         # also 2.1.2260 Personal
         version = binaryninja.core_version()
-        major, minor, patch, _ = re.match(r"(\d+)\.(\d+)\.(\d+)([- ]\w+)?", version).groups()
+        if not version:
+            return
+        version_match = re.match(r"(\d+)\.(\d+)\.(\d+)([- ]\w+)?", version)
+        if not version_match:
+            return
+        major, minor, patch, _ = version_match.groups()
         major = int(major)
         minor = int(minor)
         patch = int(patch)
@@ -89,6 +94,13 @@ def graph_il_insn(g: FlowGraph, head: FlowGraphNode, il: Any, label: Optional[st
         )
 
     if isinstance(il, (HighLevelILInstruction, MediumLevelILInstruction, LowLevelILInstruction)):
+        get_label_ty: Callable[[int], Tuple[str, str]]
+        if isinstance(il, LowLevelILInstruction):
+            get_label_ty = lambda op_index: il.ILOperations[il.operation][op_index]
+        elif isinstance(il, MediumLevelILInstruction):
+            get_label_ty = lambda op_index: il.ILOperations[il.operation][op_index]
+        elif isinstance(il, HighLevelILInstruction):
+            get_label_ty = lambda op_index: il.ILOperations[il.operation][op_index]
 
         tokens.append(
             InstructionTextToken(
@@ -100,7 +112,7 @@ def graph_il_insn(g: FlowGraph, head: FlowGraphNode, il: Any, label: Optional[st
         ops = enumerate(il.operands)
         for _, o in ops:
             try:
-                edge_label, ty = il.ILOperations[il.operation][op_index]
+                edge_label, ty = get_label_ty(op_index)
             except IndexError:
                 # Some operations don't have operations (like HLIL_NORET)
                 continue
@@ -185,8 +197,8 @@ def graph_il(g: FlowGraph, head: FlowGraphNode, type: str, il: LowLevelILInstruc
             [
                 InstructionTextToken(
                     InstructionTextTokenType.AddressDisplayToken,
-                    "{:#d}".format(il.instr_index),
-                    value=il.instr_index,
+                    "{:#d}".format(il.instr_index) if il.instr_index else "?",
+                    value=int(il.instr_index) if il.instr_index else 0,
                 ),
                 InstructionTextToken(
                     InstructionTextTokenType.OperandSeparatorToken, " @ "
@@ -318,12 +330,16 @@ def match_condition(name: str, o: Any) -> List[str]:
     match = []
 
     if isinstance(o, (LowLevelILInstruction, MediumLevelILInstruction, HighLevelILInstruction)):
+        get_name_ty: Callable[[int], Tuple[str, str]]
         if isinstance(o, LowLevelILInstruction):
             operation_class = "LowLevelILOperation"
+            get_name_ty = lambda i: o.ILOperations[o.operation][i]
         elif isinstance(o, MediumLevelILInstruction):
             operation_class = "MediumLevelILOperation"
+            get_name_ty = lambda i: o.ILOperations[o.operation][i]
         elif isinstance(o, HighLevelILInstruction):
             operation_class = "HighLevelILOperation"
+            get_name_ty = lambda i: o.ILOperations[o.operation][i]
 
         match += ["# {}".format(str(o))]
         match += [
@@ -333,7 +349,7 @@ def match_condition(name: str, o: Any) -> List[str]:
 
         ops = enumerate(o.operands)
         for i, oo in ops:
-            oo_name, ty = o.ILOperations[o.operation][i]
+            oo_name, ty = get_name_ty(i)
             if ty == 'reg_stack_ssa_dest_and_src' or ty == 'var_ssa_dest_and_src':
                 next_name = 'next' if oo_name == 'prev' else 'dest'
                 full_name = "{}.{}".format(name, next_name)
