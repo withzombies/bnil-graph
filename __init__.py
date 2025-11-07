@@ -15,7 +15,7 @@
 
 import re
 from collections import defaultdict
-from typing import List, Optional, Any, Callable, Tuple
+from typing import List, Optional, Any, Tuple
 
 import binaryninja
 from binaryninja import Settings, BinaryView, FlowGraph, FlowGraphNode, InstructionTextToken, InstructionTextTokenType, LowLevelILInstruction, HighLevelILInstruction, MediumLevelILInstruction, DisassemblyTextLine, BranchType, log_error, ILRegister, SSARegister, PluginCommand, SSAVariable, show_plain_text_report, lowlevelil, mediumlevelil, Function, function
@@ -70,7 +70,7 @@ def plugin_show_graph_report(bv: BinaryView, g: FlowGraph, name: str) -> None:
         if major == 1 and minor <= 3 and patch < 2086:
             g.show(name)
             return
-    except:
+    except Exception:
         pass
 
     bv.show_graph_report(name, g)
@@ -94,13 +94,8 @@ def graph_il_insn(g: FlowGraph, head: FlowGraphNode, il: Any, label: Optional[st
         )
 
     if isinstance(il, (HighLevelILInstruction, MediumLevelILInstruction, LowLevelILInstruction)):
-        get_label_ty: Callable[[int], Tuple[str, str]]
-        if isinstance(il, LowLevelILInstruction):
-            get_label_ty = lambda op_index: il.ILOperations[il.operation][op_index]
-        elif isinstance(il, MediumLevelILInstruction):
-            get_label_ty = lambda op_index: il.ILOperations[il.operation][op_index]
-        elif isinstance(il, HighLevelILInstruction):
-            get_label_ty = lambda op_index: il.ILOperations[il.operation][op_index]
+        def get_label_ty(op_index: int) -> Tuple[str, str]:
+            return il.ILOperations[il.operation][op_index]
 
         tokens.append(
             InstructionTextToken(
@@ -330,16 +325,15 @@ def match_condition(name: str, o: Any) -> List[str]:
     match = []
 
     if isinstance(o, (LowLevelILInstruction, MediumLevelILInstruction, HighLevelILInstruction)):
-        get_name_ty: Callable[[int], Tuple[str, str]]
         if isinstance(o, LowLevelILInstruction):
             operation_class = "LowLevelILOperation"
-            get_name_ty = lambda i: o.ILOperations[o.operation][i]
         elif isinstance(o, MediumLevelILInstruction):
             operation_class = "MediumLevelILOperation"
-            get_name_ty = lambda i: o.ILOperations[o.operation][i]
         elif isinstance(o, HighLevelILInstruction):
             operation_class = "HighLevelILOperation"
-            get_name_ty = lambda i: o.ILOperations[o.operation][i]
+
+        def get_name_ty(i: int) -> Tuple[str, str]:
+            return o.ILOperations[o.operation][i]
 
         match += ["# {}".format(str(o))]
         match += [
@@ -376,7 +370,7 @@ def match_condition(name: str, o: Any) -> List[str]:
             cond = match_condition(full_name, sub_insn)
             match += cond
 
-    elif isinstance(o, (int, int)):
+    elif isinstance(o, int):
         match += ["if {} != {:#x}:".format(name, o)]
         match += ["    return False\n"]
     elif isinstance(o, ILRegister):
