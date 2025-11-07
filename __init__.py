@@ -13,10 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-from binaryninja import *
-from collections import defaultdict
 import re
+from collections import defaultdict
+from typing import List, Optional, Any, Callable, Tuple
+
+import binaryninja
+from binaryninja import Settings, BinaryView, FlowGraph, FlowGraphNode, InstructionTextToken, InstructionTextTokenType, LowLevelILInstruction, HighLevelILInstruction, MediumLevelILInstruction, DisassemblyTextLine, BranchType, log_error, ILRegister, SSARegister, PluginCommand, SSAVariable, show_plain_text_report, lowlevelil, mediumlevelil, Function, function
 
 Settings().register_group("bnil-graph", "BNIL Graph")
 Settings().register_setting("bnil-graph.showCommon", """
@@ -49,7 +51,7 @@ Settings().register_setting("bnil-graph.showSSA", """
     }
     """)
 
-def show_graph_report(bv, g, name):
+def plugin_show_graph_report(bv: BinaryView, g: FlowGraph, name: str) -> None:
 
     try:
         # 1.3.2086-dev
@@ -69,8 +71,7 @@ def show_graph_report(bv, g, name):
     bv.show_graph_report(name, g)
 
 
-def graph_il_insn(g, head, il, label=None):
-    # type: (FlowGraph, FlowGraphNode, LowLevelILInstruction, Optional[str]) -> None
+def graph_il_insn(g: FlowGraph, head: FlowGraphNode, il: Any, label: Optional[str] = None) -> None:
 
     record = FlowGraphNode(g)
     tokens = []
@@ -173,8 +174,7 @@ def graph_il_insn(g, head, il, label=None):
     head.add_outgoing_edge(BranchType.UnconditionalBranch, record)
 
 
-def graph_il(g, head, type, il):
-    # type: (FlowGraph, FlowGraphNode, str, LowLevelILInstruction) -> None
+def graph_il(g: FlowGraph, head: FlowGraphNode, type: str, il: LowLevelILInstruction) -> None:
 
     il_desc = binaryninja.FlowGraphNode(g)
 
@@ -215,7 +215,7 @@ def graph_il(g, head, type, il):
     head.add_outgoing_edge(BranchType.UnconditionalBranch, il_desc)
 
 
-def graph_ils(bv, g, head, func, addr):
+def graph_ils(bv: BinaryView, g: FlowGraph, head: FlowGraphNode, func: Function, addr: int) -> None:
     lookup = collect_ils(bv, func)
 
     for il_type in sorted(lookup):
@@ -224,8 +224,8 @@ def graph_ils(bv, g, head, func, addr):
             graph_il(g, head, il_type, il)
 
 
-def collect_ils(bv, func):
-    lookup = defaultdict(lambda: defaultdict(list))
+def collect_ils(bv: BinaryView, func: Function) -> defaultdict[str, defaultdict[int, List[Any]]]:
+    lookup: defaultdict[str, defaultdict[int, List[Any]]] = defaultdict(lambda: defaultdict(list))
 
     llil = func.llil_if_available
     mlil = func.mlil_if_available
@@ -281,7 +281,7 @@ def collect_ils(bv, func):
     return lookup
 
 
-def get_function_containing_instruction_at(bv, addr):
+def get_function_containing_instruction_at(bv: BinaryView, addr: int) -> Optional[Function]:
     # Ensure that the `Function` returned contains an instruction starting at `addr`
     # This is needed in the case of overlapping functions where instructions are not aligned
     functions = bv.get_functions_containing(addr)  # type: List[Function]
@@ -292,10 +292,13 @@ def get_function_containing_instruction_at(bv, addr):
 
     # Should never be reached
     log_error("Found no function with instruction at address {:#x})".format(addr))
+    return None
 
 
-def graph_bnil(bv, addr):
-    function = get_function_containing_instruction_at(bv, addr)  # type: Function
+def graph_bnil(bv: BinaryView, addr: int) -> None:
+    function = get_function_containing_instruction_at(bv, addr)
+    if not function:
+        return
     g = binaryninja.FlowGraph()
 
     (tokens,) = [
@@ -308,10 +311,10 @@ def graph_bnil(bv, addr):
 
     graph_ils(bv, g, head, function, addr)
 
-    show_graph_report(bv, g, "Instruction Graph ({:#x})".format(addr))
+    plugin_show_graph_report(bv, g, "Instruction Graph ({:#x})".format(addr))
 
 
-def match_condition(name, o):
+def match_condition(name: str, o: Any) -> List[str]:
     match = []
 
     if isinstance(o, (LowLevelILInstruction, MediumLevelILInstruction, HighLevelILInstruction)):
@@ -386,8 +389,10 @@ def match_condition(name, o):
     return match
 
 
-def match_bnil(bv, addr):
-    function = get_function_containing_instruction_at(bv, addr) # type: Function
+def match_bnil(bv: BinaryView, addr: int) -> None:
+    function = get_function_containing_instruction_at(bv, addr)
+    if not function:
+        return None
 
     lookup = collect_ils(bv, function)
 
